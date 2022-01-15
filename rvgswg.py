@@ -155,8 +155,12 @@ def org_to_html(file: str):
 
 
 def help():
-    print("""
-            """)
+    print("""Arguments:
+
+run - Create HTTP server.
+gen - Generate website.
+clean - Clean output.
+help - Prints this info.""")
 
 
 def init():
@@ -198,6 +202,10 @@ def main():
 
     arg = sys.argv[1]
 
+    if arg == "help":
+        help()
+        exit(1)
+
     # check if website hidden file exists
     if not os.path.isfile(DIR_ID):
         if arg == "init":
@@ -236,8 +244,6 @@ def main():
         gen()
     elif arg == "clean":
         clean()
-    elif arg == "help":
-        help()
     else:
         Logger.info("No valid argument was passed")
         exit(1)
