@@ -2,7 +2,33 @@
 
 A static website generator for my website. This is a very specific setup, using my own
 [Emacs Configuration](https://github.com/RomeuG/.emacs.d), my own Org-Mode configuration
-and my own Emacs `org2html` script, therefore, this won't probably suit your needs.
+and my own Emacs `org2html` script, therefore, **this won't probably suit your needs**.
+
+# Usage
+
+```
+$ ./rvgswg.py help
+
+Arguments:
+
+run - Create HTTP server.
+gen - Generate website.
+clean - Clean output.
+help - Prints this info.
+```
+
+## Configuration
+
+Configuration is done through constants in the `rvgswg.py` file:
+
+```
+CONFIG_SOURCE_DIR - Source directory of the website.
+CONFIG_DEST_DIR - Destination of the website files after generation.
+CONFIG_SERVE_DIR - Serve directory for the `run` command.
+CONFIG_ORG2HTML_EXEC - Executable file for `org2html` conversion.
+CONFIG_HEADER_ORG_MODE - Header to be added to the top of every org-mode file.
+CONFIG_FOOTER_ORG_MODE - Footer to be added to the end of every org-mode file.
+```
 
 # License
 
