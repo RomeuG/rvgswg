@@ -30,6 +30,43 @@ CONFIG_HEADER_ORG_MODE - Header to be added to the top of every org-mode file.
 CONFIG_FOOTER_ORG_MODE - Footer to be added to the end of every org-mode file.
 ```
 
+# Features
+
+## Article HTML Generation
+
+To automatically generate an `articles` page (`index.html`), the file
+`features/articles.json` needs to exist with this format:
+
+```json
+{
+  "main_html": "<html>{{body}}</html>",
+  "body_placeholder": "{{body}}",
+  "dest_file": "website/articles/index.html",
+  "articles": [
+    {
+      "directory": "website/articles/org-mode-mathjax/org-mode-mathjax.html",
+      "url": "../articles/org-mode-mathjax/org-mode-mathjax.html",
+      "title": "Org-Mode & MathJax",
+      "date": "30-05-2021"
+    }
+  ]
+}
+```
+
+Main object has four different keys:
+
+- `main_html` - Result file HTML, with its placeholder included.
+- `body_placeholder` - the format of the placeholder for the `replace` function.
+- `dest_file` - Destination file path.
+- `articles` - JSON Array of articles.
+
+The article object has four different attributes:
+
+- `directory` - File path of the article.
+- `url` - The article URL for the `<a>` tag.
+- `title` - Title for the paragraph tag.
+- `date` - Date of the article.
+
 # License
 
 Copyright 2022 Romeu Gomes
