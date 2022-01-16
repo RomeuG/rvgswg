@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import glob
-from http.server import HTTPServer, SimpleHTTPRequestHandler
 import os
 import shutil
 import subprocess
@@ -9,7 +8,9 @@ import sys
 import re
 import datetime
 import pathlib
+import json
 
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 from joblib import Parallel, delayed
 
 DIR_ID = ".rvgswg"
@@ -64,6 +65,10 @@ CONFIG_FOOTER_ORG_MODE = """
 </footer>
 #+END_EXPORT
 """
+
+FEATURES_CONFIG = {
+    "articles": True,
+}
 
 
 class Logger:
@@ -154,6 +159,34 @@ def org_to_html(file: str):
         Logger.critical(f"org2html exited with error")
 
 
+def feature_articles(feature: str):
+    Logger.info(f"Executing feature: {feature}")
+
+    article_list = []
+
+    main_html: str = ""
+    dest_file = ""
+    body_placeholder = ""
+
+    with open("features/articles.json", "r") as f_object:
+        data = json.load(f_object)
+        body_placeholder = data["body_placeholder"]
+        articles = data["articles"]
+        dest_file = data["dest_file"]
+        main_html = data["main_html"]
+        for article in articles:
+            title = article["title"]
+            url = article["url"]
+            date = article["date"]
+            article_list.append(
+                f"<p>{date} - <a href=\"{url}\">{title}</a></p>")
+
+    body = "\n".join(article_list)
+    finished_html = main_html.replace(body_placeholder, body)
+    with open(dest_file, "w") as f_object:
+        f_object.write(finished_html)
+
+
 def help():
     print("""Arguments:
 
@@ -187,7 +220,14 @@ def gen():
     # start finding org-mode files
     files_org = glob.glob("./website/**/*.org", recursive=True)
     # for each org file, execute org2html conversion
-    Parallel(n_jobs=8)(delayed(org_to_html)(i) for i in files_org)
+    Parallel(n_jobs=4)(delayed(org_to_html)(i) for i in files_org)
+
+    # start executing features
+    for feature, enabled in FEATURES_CONFIG.items():
+        Logger.info(f"Featured {feature} is enabled: {enabled}")
+
+        if feature == "articles":
+            feature_articles(feature)
 
 
 def clean():
