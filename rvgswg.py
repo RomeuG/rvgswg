@@ -20,54 +20,9 @@ CONFIG_DEST_DIR = "website"
 CONFIG_SERVE_DIR = "website"
 CONFIG_ORG2HTML_EXEC = "emacs_org2html"
 
-CONFIG_HEADER_ORG_MODE = """#+AUTHOR: Romeu Vieira
-
-#+OPTIONS: html-style:nil
-#+OPTIONS: html-scripts:nil
-
-#+OPTIONS: author:nil
-#+OPTIONS: email:nil
-#+OPTIONS: date:nil
-#+OPTIONS: toc:nil
-
-#+PROPERTY: header-args :eval no
-
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="/style.css"/>
-
-"""
-
-# Placeholders:
-#   {{date}}
-CONFIG_FOOTER_ORG_MODE = """
-* FOOTER                                                                                              :ignore:
-:PROPERTIES:
-:clearpage: t
-:END:
-#+BEGIN_EXPORT html
-<hr>
-<footer>
-  <div class="container">
-    <ul class="menu-list">
-      <li class="menu-list-item flex-basis-100-margin fit-content">
-        <a href="/index.html" class="test">Home</a>
-      </li>
-      <li class="menu-list-item flex-basis-100-margin fit-content">
-        <a href="/articles/articles.html">Articles</a>
-      </li>
-      <li class="menu-list-item flex-basis-100-margin fit-content">
-        <a href="/writeups/htb/index.html">Write-Ups</a>
-      </li>
-      <li class="menu-list-item flex-basis-100-margin fit-content">
-        <a class="inactive-link">{{date}}</a>
-      </li>
-    </ul>
-  </div>
-</footer>
-#+END_EXPORT
-"""
-
 FEATURES_CONFIG = {
     "articles": True,
+    "orgmode": True,
 }
 
 
@@ -127,7 +82,7 @@ def footer_set_date(file_text: str, footer_text: str) -> str:
         return footer_set_date_impl(footer_text, get_current_date_ddmmyyyy())
 
 
-def org_to_html(file: str):
+def org_to_html(file: str, org_header: str, org_footer: str, org_binary: str):
     Logger.info(f"Converting {file} to HTML...")
 
     file_text = get_file_text(file)
@@ -136,19 +91,19 @@ def org_to_html(file: str):
     with open(file, "r+") as f_object:
         lines = f_object.readlines()
         f_object.seek(0)
-        f_object.write(CONFIG_HEADER_ORG_MODE)
+        f_object.write(org_header)
         for line in lines:
             f_object.write(line)
 
     # add footer
     with open(file, "a") as f_object:
-        footer = CONFIG_FOOTER_ORG_MODE
+        footer = org_footer
         footer = footer_set_date(file_text, footer)
         f_object.write(footer)
 
     # convert to html
     result = subprocess.run(
-        [CONFIG_ORG2HTML_EXEC, file],
+        [org_binary, file],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.STDOUT,
     )
@@ -187,6 +142,27 @@ def feature_articles(feature: str):
         f_object.write(finished_html)
 
 
+def feature_orgmode(feature: str):
+    Logger.info(f"Executing feature: {feature}")
+
+    org2html_binary = ""
+    org2html_header = ""
+    org2html_footer = ""
+
+    with open("features/orgmode.json", "r") as f_object:
+        data = json.load(f_object)
+        org2html_binary = data["binary"]
+        org2html_header = data["header"]
+        org2html_footer = data["footer"]
+
+    # start finding org-mode files
+    files_org = glob.glob("./website/**/*.org", recursive=True)
+    # for each org file, execute org2html conversion
+    Parallel(n_jobs=4)(delayed(org_to_html)(i, org2html_header,
+                                            org2html_footer, org2html_binary)
+                       for i in files_org)
+
+
 def help():
     print("""Arguments:
 
@@ -217,17 +193,15 @@ def gen():
         )
         exit(1)
 
-    # start finding org-mode files
-    files_org = glob.glob("./website/**/*.org", recursive=True)
-    # for each org file, execute org2html conversion
-    Parallel(n_jobs=4)(delayed(org_to_html)(i) for i in files_org)
-
     # start executing features
     for feature, enabled in FEATURES_CONFIG.items():
         Logger.info(f"Featured {feature} is enabled: {enabled}")
 
         if feature == "articles":
             feature_articles(feature)
+
+        if feature == "orgmode":
+            feature_orgmode(feature)
 
 
 def clean():
