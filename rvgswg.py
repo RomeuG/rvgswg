@@ -129,12 +129,14 @@ def feature_articles(feature: str):
         articles = data["articles"]
         dest_file = data["dest_file"]
         main_html = data["main_html"]
+        output: str = data["output"]
         for article in articles:
             title = article["title"]
             url = article["url"]
             date = article["date"]
-            article_list.append(
-                f"<p>{date} - <a href=\"{url}\">{title}</a></p>")
+            html_final = output.replace("{{date}}", date).replace(
+                "{{url}}", url).replace("{{title}}", title)
+            article_list.append(html_final)
 
     body = "\n".join(article_list)
     finished_html = main_html.replace(body_placeholder, body)
