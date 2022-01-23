@@ -10,6 +10,7 @@ import datetime
 import pathlib
 import json
 
+from contextlib import contextmanager
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from joblib import Parallel, delayed
 
@@ -46,6 +47,19 @@ class LocalHTTPHandler(SimpleHTTPRequestHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=CONFIG_SERVE_DIR, **kwargs)
+
+
+@contextmanager
+def open_with_error(filename: str, mode):
+    try:
+        f = open(filename, mode)
+    except IOError as err:
+        yield None, err
+    else:
+        try:
+            yield f, None
+        finally:
+            f.close()
 
 
 def get_current_date_ddmmyyyy() -> str:
@@ -88,18 +102,24 @@ def org_to_html(file: str, org_header: str, org_footer: str, org_binary: str):
     file_text = get_file_text(file)
 
     # add header
-    with open(file, "r+") as f_object:
-        lines = f_object.readlines()
-        f_object.seek(0)
-        f_object.write(org_header)
-        for line in lines:
-            f_object.write(line)
+    with open_with_error(file, "r+") as (f_object, err):
+        if err:
+            pass
+        elif f_object is not None:
+            lines = f_object.readlines()
+            f_object.seek(0)
+            f_object.write(org_header)
+            for line in lines:
+                f_object.write(line)
 
     # add footer
-    with open(file, "a") as f_object:
-        footer = org_footer
-        footer = footer_set_date(file_text, footer)
-        f_object.write(footer)
+    with open_with_error(file, "a") as (f_object, err):
+        if err:
+            pass
+        elif f_object is not None:
+            footer = org_footer
+            footer = footer_set_date(file_text, footer)
+            f_object.write(footer)
 
     # convert to html
     result = subprocess.run(
@@ -110,8 +130,8 @@ def org_to_html(file: str, org_header: str, org_footer: str, org_binary: str):
 
     try:
         result.check_returncode()
-    except:
-        Logger.critical(f"org2html exited with error")
+    except subprocess.CalledProcessError as e:
+        Logger.critical(f"{org_binary} exited with error: {e.returncode}")
 
 
 def feature_articles(feature: str):
@@ -123,25 +143,31 @@ def feature_articles(feature: str):
     dest_file = ""
     body_placeholder = ""
 
-    with open("features/articles.json", "r") as f_object:
-        data = json.load(f_object)
-        body_placeholder = data["body_placeholder"]
-        articles = data["articles"]
-        dest_file = data["dest_file"]
-        main_html = data["main_html"]
-        output: str = data["output"]
-        for article in articles:
-            title = article["title"]
-            url = article["url"]
-            date = article["date"]
-            html_final = output.replace("{{date}}", date).replace(
-                "{{url}}", url).replace("{{title}}", title)
-            article_list.append(html_final)
+    with open_with_error("features/articles.json", "r") as (f_object, err):
+        if err:
+            pass
+        elif f_object is not None:
+            data = json.load(f_object)
+            body_placeholder = data["body_placeholder"]
+            articles = data["articles"]
+            dest_file = data["dest_file"]
+            main_html = data["main_html"]
+            output: str = data["output"]
+            for article in articles:
+                title = article["title"]
+                url = article["url"]
+                date = article["date"]
+                html_final = output.replace("{{date}}", date).replace(
+                    "{{url}}", url).replace("{{title}}", title)
+                article_list.append(html_final)
 
     body = "\n".join(article_list)
     finished_html = main_html.replace(body_placeholder, body)
-    with open(dest_file, "w") as f_object:
-        f_object.write(finished_html)
+    with open_with_error(dest_file, "w") as (f_object, err):
+        if err:
+            pass
+        elif f_object is not None:
+            f_object.write(finished_html)
 
 
 def feature_orgmode(feature: str):
@@ -151,11 +177,14 @@ def feature_orgmode(feature: str):
     org2html_header = ""
     org2html_footer = ""
 
-    with open("features/orgmode.json", "r") as f_object:
-        data = json.load(f_object)
-        org2html_binary = data["binary"]
-        org2html_header = data["header"]
-        org2html_footer = data["footer"]
+    with open_with_error("features/orgmode.json", "r") as (f_object, err):
+        if err:
+            pass
+        elif f_object is not None:
+            data = json.load(f_object)
+            org2html_binary = data["binary"]
+            org2html_header = data["header"]
+            org2html_footer = data["footer"]
 
     # start finding org-mode files
     files_org = glob.glob("./website/**/*.org", recursive=True)
