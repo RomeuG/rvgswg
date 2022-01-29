@@ -9,6 +9,7 @@ import re
 import datetime
 import pathlib
 import json
+import html
 
 from contextlib import contextmanager
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -24,6 +25,7 @@ CONFIG_ORG2HTML_EXEC = "emacs_org2html"
 FEATURES_CONFIG = {
     "articles": True,
     "orgmode": True,
+    "rss": True,
 }
 
 
@@ -194,6 +196,50 @@ def feature_orgmode(feature: str):
                        for i in files_org)
 
 
+def feature_rss(feature: str):
+    Logger.info(f"Executing feature: {feature}")
+
+    if FEATURES_CONFIG["articles"] is False:
+        Logger.error(
+            "RSS feature couldn't execute because Articles feature is not enabled"
+        )
+        pass
+
+    rss_file = ""
+    rss_body = ""
+    rss_item_body = ""
+    rss_articles_list = []
+
+    with open_with_error("features/rss.json", "r") as (f_object, err):
+        if err is None and f_object is not None:
+            rss_data = json.load(f_object)
+            rss_file = rss_data["rss_file"]
+            rss_body = rss_data["rss_body"]
+            rss_item_body = rss_data["rss_item_body"]
+
+    with open_with_error("features/articles.json", "r") as (f_object, err):
+        if err is None and f_object is not None:
+            articles_data = json.load(f_object)
+            articles = articles_data["articles"]
+            for article in articles:
+                title = html.escape(article["title"])
+                url = html.escape(article["url"])
+                description = html.escape(article["description"])
+
+                rss_article_body = rss_item_body.replace(
+                    "{{title}}",
+                    title).replace("{{url}}",
+                                   url).replace("{{description}}", description)
+                rss_articles_list.append(rss_article_body)
+
+    full_body_string = "\n".join(rss_articles_list)
+    full_xml_string = rss_body.replace("{{body}}", full_body_string)
+
+    with open_with_error(rss_file, "w") as (f_object, err):
+        if err is None and f_object is not None:
+            f_object.write(full_xml_string)
+
+
 def help():
     print("""Arguments:
 
@@ -233,6 +279,9 @@ def gen():
 
         if feature == "orgmode":
             feature_orgmode(feature)
+
+        if feature == "rss":
+            feature_rss(feature)
 
 
 def clean():
