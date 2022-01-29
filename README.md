@@ -67,6 +67,47 @@ The article object has four different attributes:
 - `title` - Title for the paragraph tag.
 - `date` - Date of the article.
 
+## RSS Feed Generation
+
+This feature depends on the article generation feature because it uses the article
+references to build the RSS feed. To make this feature work, the file `features/rss.json`
+should exist with a structure similar to the following example:
+
+```json
+{
+  "rss_file": "website/rss.xml",
+  "rss_body": "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<rss version=\"2.0\">\n<channel>\n{{body}}\n</channel>\n</rss>",
+  "rss_item_body": "<item>\n\t<title>{{title}}</title>\n\t<link>{{url}}</link>\n\t<description>{{description}}</description>\n</item>\n"
+}
+```
+
+The structure attributes are:
+
+- `rss_file` - The XML file location.
+- `rss_body` - RSS file main body.
+- `rss_item_body` - Each items' structure.
+
+## Org-Mode to HTML
+
+This feature finds Org-Mode files and converts them to HTML using a script provided by the
+user (or the script that is included in this repository in the `scripts` folder). The
+configuration is done through the `features/orgmode.json` file, which has the following
+structure:
+
+```json
+{
+  "binary": "emacs_org2html",
+  "header": "#+AUTHOR: Romeu Vieira\n\n#+OPTIONS: html-style:nil\n#+OPTIONS: html-scripts:nil\n\n#+OPTIONS: author:nil\n#+OPTIONS: email:nil\n#+OPTIONS: date:nil\n#+OPTIONS: toc:nil\n\n#+PROPERTY: header-args :eval no\n\n#+HTML_HEAD: <link rel=\"stylesheet\" type=\"text/css\" href=\"/style.css\"/>\n\n",
+  "footer": "\n* FOOTER                                                                                              :ignore:\n:PROPERTIES:\n:clearpage: t\n:END:\n#+BEGIN_EXPORT html\n<hr>\n<footer>\n<div class=\"container\">\n<ul class=\"menu-list\">\n<li class=\"menu-list-item flex-basis-100-margin fit-content\">\n<a href=\"/index.html\" class=\"test\">Home</a>\n</li>\n<li class=\"menu-list-item flex-basis-100-margin fit-content\">\n<a href=\"/articles/articles.html\">Articles</a>\n</li>\n<li class=\"menu-list-item flex-basis-100-margin fit-content\">\n<a href=\"/writeups/htb/index.html\">Write-Ups</a>\n</li>\n<li class=\"menu-list-item flex-basis-100-margin fit-content\">\n<a class=\"inactive-link\">{{date}}</a>\n</li>\n</ul>\n</div>\n</footer>\n#+END_EXPORT"
+}
+```
+
+The structure has the following attributes:
+
+- `binary` - The executable file to be used that operates on each org-mode file to convert to HTML.
+- `header` - Org-mode formatted contents to be inserted before the org-mode file contents.
+- `footer` - Org-mode formatted contents to be inserted after the org-mode file contents.
+
 # License
 
 Copyright 2022 Romeu Gomes
