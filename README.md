@@ -126,7 +126,7 @@ structure:
 
 The structure has the following attributes:
 
-- `binary` - The executable file to be used that operates on each org-mode file to convert to HTML.
+- `binary` - The name of the executable file (in `$PATH`) to be used that operates on each org-mode file to convert to HTML.
 - `header` - Org-mode formatted contents to be inserted before the org-mode file contents.
 - `footer` - Org-mode formatted contents to be inserted after the org-mode file contents.
 

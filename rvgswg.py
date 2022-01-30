@@ -17,8 +17,6 @@ from joblib import Parallel, delayed
 
 DIR_ID = ".rvgswg"
 
-CONFIG_ORG2HTML_EXEC = "emacs_org2html"
-
 rvgswg_source_dir = ""
 rvgswg_dest_dir = ""
 rvgswg_serve_dir = ""
@@ -183,6 +181,16 @@ def feature_orgmode(feature: str):
             org2html_binary = data["binary"]
             org2html_header = data["header"]
             org2html_footer = data["footer"]
+
+    # verify if binary actually exists
+    org2htmlexe = shutil.which(org2html_binary)
+    if org2htmlexe is None:
+        Logger.info("The org2html file does not exist!")
+        Logger.info(f"Skipping {feature} feature...")
+        pass
+    else:
+        Logger.info(f"org2html file detected: {org2htmlexe}")
+
 
     # start finding org-mode files
     files_org = glob.glob("./website/**/*.org", recursive=True)
@@ -366,14 +374,6 @@ def main():
         exit(1)
     else:
         Logger.info("Website source directory detected!")
-
-    # check if org-mode2html file exists
-    org2htmlexe = shutil.which(CONFIG_ORG2HTML_EXEC)
-    if org2htmlexe is None:
-        Logger.info("The org2html file does not exist!")
-        exit(1)
-    else:
-        Logger.info(f"org2html file detected: {org2htmlexe}")
 
     if arg == "run":
         Logger.info("Starting HTTP Server (http://localhost:8800/)...")
