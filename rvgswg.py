@@ -17,16 +17,12 @@ from joblib import Parallel, delayed
 
 DIR_ID = ".rvgswg"
 
-CONFIG_SOURCE_DIR = "source"
-CONFIG_DEST_DIR = "website"
-CONFIG_SERVE_DIR = "website"
 CONFIG_ORG2HTML_EXEC = "emacs_org2html"
 
-FEATURES_CONFIG = {
-    "articles": True,
-    "orgmode": True,
-    "rss": True,
-}
+rvgswg_source_dir = ""
+rvgswg_dest_dir = ""
+rvgswg_serve_dir = ""
+rvgswg_features = {}
 
 
 class Logger:
@@ -48,7 +44,7 @@ class LocalHTTPHandler(SimpleHTTPRequestHandler):
     """set serve directory"""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=CONFIG_SERVE_DIR, **kwargs)
+        super().__init__(*args, directory=rvgswg_serve_dir, **kwargs)
 
 
 @contextmanager
@@ -199,7 +195,7 @@ def feature_orgmode(feature: str):
 def feature_rss(feature: str):
     Logger.info(f"Executing feature: {feature}")
 
-    if FEATURES_CONFIG["articles"] is False:
+    if rvgswg_features["articles"] is False:
         Logger.error(
             "RSS feature couldn't execute because Articles feature is not enabled"
         )
@@ -260,18 +256,18 @@ def init():
 
 def gen():
     # check if website dir already exists and delete item
-    shutil.rmtree(CONFIG_DEST_DIR)
+    shutil.rmtree(rvgswg_dest_dir)
 
     # copy directory to new directory called `website`
-    if (shutil.copytree(CONFIG_SOURCE_DIR, CONFIG_DEST_DIR, dirs_exist_ok=True)
-            != CONFIG_DEST_DIR):
+    if (shutil.copytree(rvgswg_source_dir, rvgswg_dest_dir, dirs_exist_ok=True)
+            != rvgswg_dest_dir):
         Logger.critical(
             "Pasted directory does not correspond to the target directory, exiting..."
         )
         exit(1)
 
     # start executing features
-    for feature, enabled in FEATURES_CONFIG.items():
+    for feature, enabled in rvgswg_features.items():
         Logger.info(f"Featured {feature} is enabled: {enabled}")
 
         if feature == "articles":
@@ -285,13 +281,31 @@ def gen():
 
 
 def clean():
-    pass
+    shutil.rmtree(rvgswg_dest_dir)
+
+
+def json_get_value(fn, key: str):
+    try:
+        result = fn()
+        if result == "":
+            raise Exception
+        else:
+            return result
+    except:
+        Logger.critical(f"Required JSON key {key} has no value or does not exist.")
+        exit(1)
 
 
 def main():
 
+    global rvgswg_source_dir
+    global rvgswg_dest_dir
+    global rvgswg_serve_dir
+    global rvgswg_features
+
     if len(sys.argv) != 2:
-        Logger.info("Incorrect number of arguments")
+        Logger.info("Incorrect number of arguments\n")
+        help()
         exit(1)
 
     arg = sys.argv[1]
@@ -313,11 +327,33 @@ def main():
             Logger.info("Directory already initialized.")
             exit(1)
 
-        Logger.info(
-            "This directory is now identified as a valid directory for rvgswg")
+    Logger.info(
+        "This directory is now identified as a valid directory for rvgswg")
+
+    # get all information needed, exit on error
+    with open_with_error(DIR_ID, "r") as (f_object, err):
+        if err is None and f_object is not None:
+            project_data = json.load(f_object)
+
+            rvgswg_source_dir = json_get_value(
+                lambda: project_data["website_source"], "website_source")
+            rvgswg_dest_dir = json_get_value(
+                lambda: project_data["website_output"], "website_output")
+            rvgswg_serve_dir = json_get_value(
+                lambda: project_data["website_serve"], "website_serve")
+
+            features_data = json_get_value(lambda: project_data["features"],
+                                           "features")
+
+            rvgswg_features["orgmode"] = json_get_value(
+                lambda: features_data["orgmode"], "orgmode")
+            rvgswg_features["articles"] = json_get_value(
+                lambda: features_data["articles"], "articles")
+            rvgswg_features["rss"] = json_get_value(
+                lambda: features_data["rss"], "rss")
 
     # check if website source directory exists
-    if not os.path.isdir(CONFIG_SOURCE_DIR):
+    if not os.path.isdir(rvgswg_source_dir):
         Logger.info("Website source directory does not exist!")
         exit(1)
     else:

@@ -25,10 +25,32 @@ Configuration is done through constants in the `rvgswg.py` file:
 CONFIG_SOURCE_DIR - Source directory of the website.
 CONFIG_DEST_DIR - Destination of the website files after generation.
 CONFIG_SERVE_DIR - Serve directory for the `run` command.
-CONFIG_ORG2HTML_EXEC - Executable file for `org2html` conversion.
-CONFIG_HEADER_ORG_MODE - Header to be added to the top of every org-mode file.
-CONFIG_FOOTER_ORG_MODE - Footer to be added to the end of every org-mode file.
 ```
+
+The hidden file that identifies the directory (`.rvgswg`) is also home to the general
+configuration of this static website generator. The following is a configuration example:
+
+```json
+{
+    "website_source": "source",
+    "website_output": "website",
+    "website_serve": "website",
+    "features": {
+        "articles": true,
+        "rss": true,
+        "orgmode": true
+    }
+}
+```
+
+Its attributes are:
+
+- `website_source` - Website source code directory.
+- `website_output` - Website output directory.
+- `website_serve` - Directory that will be used by the HTTP server.
+
+The `features` key is another JSON object whose keys are the features (`articles`, `rss`, `orgmode`) and the values are
+the current state: enabled or disabled.
 
 # Features
 
