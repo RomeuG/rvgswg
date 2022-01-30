@@ -256,7 +256,15 @@ def init():
 
 def gen():
     # check if website dir already exists and delete item
-    shutil.rmtree(rvgswg_dest_dir)
+    try:
+        shutil.rmtree(rvgswg_dest_dir)
+    except:
+        Logger.info("Not removing output directory because it does not exist")
+
+    try:
+        os.mkdir(rvgswg_dest_dir)
+    except FileExistsError as error:
+        Logger.info(f"Output directory already exists: {error}")
 
     # copy directory to new directory called `website`
     if (shutil.copytree(rvgswg_source_dir, rvgswg_dest_dir, dirs_exist_ok=True)
