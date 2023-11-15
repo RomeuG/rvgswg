@@ -2,7 +2,7 @@
 
 A static website generator for my website. This is a very specific setup, using my own
 [Emacs Configuration](https://github.com/RomeuG/.emacs.d), my own Org-Mode configuration
-and my own Emacs `org2html` script, therefore, **this won't probably suit your needs**.
+and my own Emacs `org2html` script, therefore, **this probably won't suit your needs**.
 
 # Usage
 
