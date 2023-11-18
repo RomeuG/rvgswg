@@ -7,6 +7,7 @@ import subprocess
 import sys
 import re
 import datetime
+import time
 import pathlib
 import json
 import html
@@ -133,8 +134,6 @@ def org_to_html(file: str, org_header: str, org_footer: str, org_binary: str):
 def feature_articles(feature: str):
     Logger.info(f"Executing feature: {feature}")
 
-    article_list = []
-
     main_html: str = ""
     dest_file = ""
     body_placeholder = ""
@@ -143,27 +142,30 @@ def feature_articles(feature: str):
         if err:
             pass
         elif f_object is not None:
-            data = json.load(f_object)
-            body_placeholder = data["body_placeholder"]
-            articles = data["articles"]
-            dest_file = data["dest_file"]
-            main_html = data["main_html"]
-            output: str = data["output"]
-            for article in articles:
-                title = article["title"]
-                url = article["url"]
-                date = article["date"]
-                html_final = output.replace("{{date}}", date).replace(
-                    "{{url}}", url).replace("{{title}}", title)
-                article_list.append(html_final)
+            data_list = json.load(f_object)
+            for data in data_list:
+                article_list = []
 
-    body = "\n".join(article_list)
-    finished_html = main_html.replace(body_placeholder, body)
-    with open_with_error(dest_file, "w") as (f_object, err):
-        if err:
-            pass
-        elif f_object is not None:
-            f_object.write(finished_html)
+                body_placeholder = data["body_placeholder"]
+                articles = data["articles"]
+                dest_file = data["dest_file"]
+                main_html = data["main_html"]
+                output: str = data["output"]
+                for article in articles:
+                    title = article["title"]
+                    url = article["url"]
+                    date = article["date"]
+                    html_final = output.replace("{{date}}", date).replace(
+                        "{{url}}", url).replace("{{title}}", title)
+                    article_list.append(html_final)
+
+                body = "\n".join(article_list)
+                finished_html = main_html.replace(body_placeholder, body)
+                with open_with_error(dest_file, "w") as (f_object, err):
+                    if err:
+                        pass
+                    elif f_object is not None:
+                        f_object.write(finished_html)
 
 
 def feature_orgmode(feature: str):
@@ -190,7 +192,6 @@ def feature_orgmode(feature: str):
         pass
     else:
         Logger.info(f"org2html file detected: {org2htmlexe}")
-
 
     # start finding org-mode files
     files_org = glob.glob("./website/**/*.org", recursive=True)
@@ -223,20 +224,29 @@ def feature_rss(feature: str):
 
     with open_with_error("features/articles.json", "r") as (f_object, err):
         if err is None and f_object is not None:
-            articles_data = json.load(f_object)
-            articles = articles_data["articles"]
-            for article in articles:
-                title = html.escape(article["title"])
-                url = html.escape(article["url"])
-                description = html.escape(article["description"])
+            articles_data_list = json.load(f_object)
+            for articles_data in articles_data_list:
+                articles = articles_data["articles"]
+                for article in articles:
+                    title = html.escape(article["title"])
+                    url = html.escape(article["url"])
+                    description = html.escape(article["description"])
+                    date = article["date"]
 
-                rss_article_body = rss_item_body.replace(
-                    "{{title}}",
-                    title).replace("{{url}}",
-                                   url).replace("{{description}}", description)
-                rss_articles_list.append(rss_article_body)
+                    rss_article_body = rss_item_body.replace(
+                        "{{title}}",
+                        title).replace("{{url}}",
+                                       url).replace("{{description}}",
+                                                    description)
+                    rss_articles_list.append((rss_article_body, date))
 
-    full_body_string = "\n".join(rss_articles_list)
+    rss_articles_list.sort(
+        key=lambda article: time.strptime(article[1], "%d-%m-%Y"))
+
+    reversed_list = reversed(rss_articles_list)
+
+    articles_texts = map(lambda article: article[0], reversed_list)
+    full_body_string = "\n".join(articles_texts)
     full_xml_string = rss_body.replace("{{body}}", full_body_string)
 
     with open_with_error(rss_file, "w") as (f_object, err):
@@ -308,7 +318,8 @@ def json_get_value(fn, key: str):
         else:
             return result
     except:
-        Logger.critical(f"Required JSON key {key} has no value or does not exist.")
+        Logger.critical(
+            f"Required JSON key {key} has no value or does not exist.")
         exit(1)
 
 
